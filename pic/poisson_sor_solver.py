@@ -6,9 +6,9 @@ import numpy as np
 import numba
 
 
-@numba.jit('int64(float64[:,:], float64[:,:], float64, float64, int64)')
-def solve_poisson(rho_normed, phi, relaxation_factor=0,
-                  convergence_ratio=1e-2, max_iterations=0):
+@numba.jit('int64(float64[:,:], float64[:,:], float64, int64, float64)')
+def solve_poisson(rho_normed, phi, convergence_ratio=1e-2, max_iterations=0,
+                  relaxation_factor=0):
     """Solve the Poisson equation for phi with given normed rho using SOR
 
     Assumes phi=0 beyond boundaries.
@@ -22,13 +22,13 @@ def solve_poisson(rho_normed, phi, relaxation_factor=0,
         the square of the lattice step h^2
     phi: (m, n) ndarray
        initial guess of phi, could be phi from last PIC iteration (likely close)
-    relaxation_factor: float, optional
-       relaxation factor omega in SOR, defaults to optimum 2/(1+pi/max(m,n))
     convergence_ratio: float, optional
        ratio of average absolute change over mean absolute value of phi
        at which to stop iteration, defaults to 1%
     max_iterations: int, optional
        maximum iterations to perform, defaults to m*n
+    relaxation_factor: float, optional
+       relaxation factor omega in SOR, defaults to optimum 2/(1+pi/max(m,n))
 
     Returns
     -------
