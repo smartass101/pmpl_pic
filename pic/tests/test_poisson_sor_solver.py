@@ -1,6 +1,8 @@
+from __future__ import print_function
 from pic.poisson_sor_solver import solve_poisson
 import pytest
 import numpy as np
+from time import time
 
 
 @pytest.fixture
@@ -29,9 +31,11 @@ def laplace_numerical(field, *dr):
 def test_possion_solver(poisson_solution):
     xx, yy, rho, phi_s, h = poisson_solution
     phi = rho.copy()
+    start_t = time()
     iterations = solve_poisson(rho, phi, convergence_ratio=1e-10)
-    print iterations, phi_s/phi
-    np.testing.assert_allclose(phi, phi_s)
+    stop_t = time()
+    print("solved in", stop_t-start_t, "s in", iterations, "iterations")
+    np.testing.assert_allclose(phi, phi_s, rtol=1e-2)
 
 
 if __name__ == '__main__':
