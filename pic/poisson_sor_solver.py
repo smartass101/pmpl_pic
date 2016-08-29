@@ -17,18 +17,18 @@ def solve_poisson(rho_normed, phi, convergence_ratio=1e-2, max_iterations=0,
 
     Parameters
     ----------
-    rho_normed: (m, n) ndarray
+    rho_normed: (n, n) ndarray
         charge density divided by epsilon_0 and multiplied by
         the square of the lattice step h^2
-    phi: (m, n) ndarray
+    phi: (n, n) ndarray
        initial guess of phi, could be phi from last PIC iteration (likely close)
     convergence_ratio: float, optional
        ratio of average absolute change over mean absolute value of phi
        at which to stop iteration, defaults to 1%
     max_iterations: int, optional
-       maximum iterations to perform, defaults to m*n
+       maximum iterations to perform, defaults to n^2
     relaxation_factor: float, optional
-       relaxation factor omega in SOR, defaults to optimum 2/(1+pi/max(m,n))
+       relaxation factor omega in SOR, defaults to optimum 2/(1+pi/n)
 
     Returns
     -------
@@ -37,22 +37,22 @@ def solve_poisson(rho_normed, phi, convergence_ratio=1e-2, max_iterations=0,
     """
     sum_abs_change = iterations = 0
     reverse = False
-    M, N = phi.shape
+    N = phi.shape[0]
     if max_iterations == 0:
-        max_iterations = M*N
+        max_iterations = N**2
     if relaxation_factor == 0:
-        relaxation_factor = optimum_sor_omega(max(M, N))
+        relaxation_factor = optimum_sor_omega(N)
     while True:
         sum_abs_change = 0.0
         sum_abs_phi = 0.0
-        # phi = phi[::direction,::direction]  # alternate directions TODO slice views seems to give numba trouble
-        # rho_normed = rho_normed[::direction,::direction]
-        for i in range(M):
-            if reverse:         # backwards direction
-                i = M - i - 1   # TODO instead change range params (range or params?)
-            for j in range(N):
-                if reverse:
-                    j = N - j - 1
+        # choose iteration direction
+        if reverse:
+            start, stop, step = N-1, -1, -1
+        else:
+            start, stop, step = 0, N, 1
+        # perform iteration
+        for i in range(start, stop, step):
+            for j in range(start, stop, step):
                 phi_new = rho_normed[i,j]
                 # beyond boundaries phi=0, so only add if within boundary
                 if i > 0:
@@ -61,7 +61,7 @@ def solve_poisson(rho_normed, phi, convergence_ratio=1e-2, max_iterations=0,
                     phi_new += phi[i+1,j]
                 if j > 0:
                     phi_new += phi[i,j-1]
-                if j < M-1:
+                if j < N-1:
                     phi_new += phi[i,j+1]
                 phi_new *= 0.25 # 2D diff
                 sum_abs_phi += abs(phi_new)
