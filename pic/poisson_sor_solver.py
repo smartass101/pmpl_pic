@@ -6,7 +6,13 @@ import numpy as np
 import numba
 
 
-@numba.jit('int64(float64[:,:], float64[:,:], float64, int64, float64)')
+@numba.jit('float64(int64)')
+def optimum_sor_omega(points_1d):
+    """Optimal SOR relaxation factor for square lattice with a points_1d side"""
+    return 2.0 / (1 + np.pi / points_1d)
+
+
+@numba.jit('int64(float64[:,:], float64[:,:], float64, int64, float64)', nopython=True)
 def solve_poisson(rho_normed, phi, convergence_ratio=1e-2, max_iterations=0,
                   relaxation_factor=0):
     """Solve the Poisson equation for phi with given normed rho using SOR
@@ -36,7 +42,7 @@ def solve_poisson(rho_normed, phi, convergence_ratio=1e-2, max_iterations=0,
         number of iterations performed
     """
     sum_abs_change = iterations = 0
-    reverse = False
+    direction = 1
     N = phi.shape[0]
     if max_iterations == 0:
         max_iterations = N**2
@@ -46,28 +52,19 @@ def solve_poisson(rho_normed, phi, convergence_ratio=1e-2, max_iterations=0,
         sum_abs_change = 0.0
         sum_abs_phi = 0.0
         # choose iteration direction
-        if reverse:
-            start, stop, step = N-1, -1, -1
-        else:
+        if direction == 1:
             start, stop, step = 0, N, 1
+        else:
+            start, stop, step = N-1, -1, -1
         # perform iteration
-        for i in range(start, stop, step):
-            for j in range(start, stop, step):
-                phi_new = rho_normed[i,j]
-                # beyond boundaries phi=0, so only add if within boundary
-                if i > 0:
-                    phi_new += phi[i-1,j]
-                if i < N-1:
-                    phi_new += phi[i+1,j]
-                if j > 0:
-                    phi_new += phi[i,j-1]
-                if j < N-1:
-                    phi_new += phi[i,j+1]
-                phi_new *= 0.25 # 2D diff
+        # TODO handle boundaries
+        for i in range(start+1*direction, stop-1*direction, step):
+            for j in range(start+1*direction, stop-1*direction, step):
+                phi_new = 0.25*(rho_normed[i,j] + phi[i-1,j] + phi[i+1,j] + phi[i,j-1] + phi[i,j+1])
                 sum_abs_phi += abs(phi_new)
                 sum_abs_change += abs(phi_new - phi[i,j])
                 phi[i,j] = (1 - relaxation_factor)*phi[i,j] + relaxation_factor*phi_new
-        reverse = not reverse # alternate iteration direction to mitigate bias
+        direction *= -1 # alternate iteration direction to mitigate bias
         iterations += 1
         # compare means (count divisor is the same) and iterations count
         if sum_abs_change / sum_abs_phi < convergence_ratio or iterations >= max_iterations:
@@ -75,10 +72,15 @@ def solve_poisson(rho_normed, phi, convergence_ratio=1e-2, max_iterations=0,
     return iterations
 
 
-@numba.jit('float64(int64)')
-def optimum_sor_omega(points_1d):
-    """Optimal SOR relaxation factor for square lattice with a points_1d side"""
-    return 2.0 / (1 + np.pi / points_1d)
+def solve_sor_poisson_numpy(rho_normed, phi):
+    phi_new = np.empty_like(phi)
+    phi_new[...] = rho_normed[...]
+    phi_new[1:,:] += phi[:-1,:]
+    phi_new[:,1:] += phi[:,:-1]
+    phi_new[:-1,:] += phi[1:,:]
+    phi_new[:,:-1] += phi[:,1:]
+    phi_new *= 0.25
+    phi[...] = phi_new[...]
 
 
 if __name__ == '__main__':

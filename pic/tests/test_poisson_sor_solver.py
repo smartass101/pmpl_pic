@@ -31,11 +31,13 @@ def laplace_numerical(field, *dr):
 def test_possion_solver(poisson_solution):
     xx, yy, rho, phi_s, h = poisson_solution
     phi = rho.copy()
+    iterations = solve_poisson(rho, phi, convergence_ratio=1e-10)
+    phi[...] = 0
     start_t = time()
     iterations = solve_poisson(rho, phi, convergence_ratio=1e-10)
     stop_t = time()
     print("solved in", stop_t-start_t, "s in", iterations, "iterations")
-    np.testing.assert_allclose(phi, phi_s, rtol=1e-2)
+    np.testing.assert_allclose(phi, phi_s, rtol=1e-1)
 
 
 if __name__ == '__main__':
