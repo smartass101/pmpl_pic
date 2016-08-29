@@ -1,6 +1,7 @@
 """Poisson equation solver using the successive over-relaxation (SOR) method
 
 Based on http://www.physics.buffalo.edu/phy410-505/2011/topic3/app1/index.html
+Numerically stable mean: http://diego.assencio.com/?index=c34d06f4f4de2375658ed41f70177d59
 
 """
 import numpy as np
@@ -49,8 +50,8 @@ def solve_poisson(rho_normed, phi, convergence_ratio, max_iterations,
     # SOR iteration loop
     while True:
         # initial values
-        sum_abs_change = 0.0
-        sum_abs_phi = 0.0
+        mean_abs_change = 0.0
+        mean_abs_phi = 0.0
         # choose iteration direction
         if reverse:
             start, stop, step = N-1, -1, -1
@@ -70,13 +71,15 @@ def solve_poisson(rho_normed, phi, convergence_ratio, max_iterations,
                 if j < N-1:
                     phi_new += phi[i,j+1]
                 phi_new *= 0.25 # 2D diff results in division by 4
-                sum_abs_phi += abs(phi_new)
-                sum_abs_change += abs(phi_new - phi[i,j])
+                # recursive mean calculation for better numerical stability
+                divisor = i*N + j + 1 # number of elements calculated including this one
+                mean_abs_phi += (abs(phi_new) - mean_abs_phi) / divisor
+                mean_abs_change += (abs(phi_new - phi[i,j]) - mean_abs_change) / divisor
                 # set new SOR estimate
                 phi[i,j] = (1 - relaxation_factor)*phi[i,j] + relaxation_factor*phi_new
         reverse = not reverse # alternate iteration direction to mitigate direction bias
         iterations += 1
-        # compare means (count divisor is the same) and iterations count
-        if sum_abs_change / sum_abs_phi < convergence_ratio or iterations >= max_iterations:
+        # termination condition
+        if mean_abs_change / mean_abs_phi < convergence_ratio or iterations >= max_iterations:
             break
     return iterations
