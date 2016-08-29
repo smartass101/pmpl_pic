@@ -1,5 +1,5 @@
 from __future__ import print_function
-from pic.poisson_sor_solver import solve_poisson
+from pic.poisson_sor_solver import solve_poisson, optimum_sor_omega
 import pytest
 import numpy as np
 from time import time
@@ -19,6 +19,10 @@ def poisson_solution():
 
 
 def laplace_numerical(field, *dr):
+    """Numerical estimation of the application laplace operator on the field
+
+    Uses :func:`numpy.gradient`
+    """
     gradients = np.gradient(field, *dr)
     if len(dr) == 1:
         dr = dr*field.ndim
@@ -32,10 +36,12 @@ def test_possion_solver(poisson_solution):
     xx, yy, rho, phi_s, h = poisson_solution
     phi = rho.copy()
     start_t = time()
-    iterations = solve_poisson(rho, phi, convergence_ratio=1e-10)
+    n = phi.shape[0]
+    omega = optimum_sor_omega(n)
+    iterations = solve_poisson(rho, phi, 1e-10, n**2, omega)
     stop_t = time()
-    print("solved in", stop_t-start_t, "s in", iterations, "iterations")
-    np.testing.assert_allclose(phi, phi_s, rtol=1e-2)
+    print("solved in", round(1e3*(stop_t-start_t)), "us in", iterations, "iterations")
+    np.testing.assert_allclose(phi, phi_s, atol=1e-3)
 
 
 if __name__ == '__main__':
@@ -43,7 +49,8 @@ if __name__ == '__main__':
     from mpl_toolkits import mplot3d
     x, y, r, p_s, h = poisson_solution()
     p = np.zeros_like(r)
-    it = solve_poisson(r, p, convergence_ratio=1e-6)
+    omega = optimum_sor_omega(x.shape[0])
+    it = solve_poisson(r, p, 1e-10, x.shape[0]**2, omega)
     ax = plt.subplot(111, projection='3d')
     ax.plot_surface(x, y, p, alpha=0.5)
     ax.plot_surface(x, y, p_s, color='y', alpha=0.5)
