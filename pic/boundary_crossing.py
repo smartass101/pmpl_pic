@@ -18,7 +18,7 @@ def boundary_crossings(particle_pos, particle_vel, particle_charge, x_min,
         if beyond_boundary or in_probe: # lost particle
             active_particles -= 1 # lost a particle, will use as index of last particle
             if in_probe:          # count charge lost in probe
-                lost_charge += particle_charge[i] # TODO charge sign for current calculation?
+                lost_charge += particle_charge
             # copy last particle over lost particle
             particle_pos[i] = particle_pos[active_particles]
             particle_vel[i] = particle_vel[active_particles]
