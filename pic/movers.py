@@ -1,5 +1,6 @@
 import numba
 
+# TODO: magnetic field moving
 # TODO OPTIMIZE: merge CIC filed weighting with field usage
 @numba.jit(nopython=True, cache=True)
 def electrostatic_mover(particle_pos, particle_vel, particle_charge, particle_E, active_particles, dt):
