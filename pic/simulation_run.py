@@ -42,11 +42,6 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, cal
                          +([active_particles], charge, m))
          for (charge, m) in ((spc.e, spc.m_p), (-spc.e, spc.m_e))]
                  for region in Regions._fields)
-    species = []
-    ion_pos, ion_vel = initialize_particle_kinematics(region_length, T_e, spc.m_p, frac_N)
-    reservoir_ion_pos, reservoir_ion_vel = initialize_particle_kinematics(region_length, T_e, spc.m_e, frac_N)
-    el_pos, el_vel = initialize_particle_kinematics(region_length, T_e, spc.m_p, frac_N)
-    reservoir_el_pos, reservoir_el_vel = initialize_particle_kinematics(region_length, T_e, spc.m_e, frac_N)
     # probe potential
     phi_probe = probe_setup.get_potential(U_probe)
     poisson_solver = create_poisson_solver(grid_shape[0])
