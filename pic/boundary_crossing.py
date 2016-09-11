@@ -3,36 +3,36 @@ import numba
 
 
 @numba.jit(nopython=True)
-def boundary_crossings(particle_pos, particle_vel, particle_charge, x_min,
-                       x_max, probe_min, probe_max,
-                       active_particles):
+def boundary_crossings(particle_pos, particle_vel, x_min,
+                       x_max, probe_min, probe_max, active_particles):
     """
 
     Assumes rectangular mesh
 
     """
-    lost_charge = 0.0
+    lost_in_probe = 0
+    i = 0
     while i < active_particles: # number of active particle will decrease
-        beyond_boundary = np.any(particle_pos[i] < x_min) or np.any(x_max < particle_pos[i])
-        in_probe = np.all(probe_min <= probe_pos[i]) and np.all(probe_pos[i] <= probe_max)
+        beyond_boundary = np.any(particle_pos[i,:] < x_min) or np.any(x_max < particle_pos[i,:])
+        in_probe = np.all(probe_min <= particle_pos[i,:]) and np.all(particle_pos[i,:] <= probe_max)
         if beyond_boundary or in_probe: # lost particle
             active_particles -= 1 # lost a particle, will use as index of last particle
-            if in_probe:          # count charge lost in probe
-                lost_charge += particle_charge
+            if in_probe:          # count particles lost in probe
+                lost_in_probe += 1
             # copy last particle over lost particle
-            particle_pos[i] = particle_pos[active_particles]
-            particle_vel[i] = particle_vel[active_particles]
-            particle_charge[i] = particle_charge[i]
+            particle_pos[i,:] = particle_pos[active_particles,:]
+            particle_vel[i,:] = particle_vel[active_particles,:]
             continue            # process copied last particle at this index i
         i += 1                  # next particle if possible
-    return active_particles, lost_charge
+    return active_particles, lost_in_probe
 
 
 @numba.jit(nopython=True)
 def swap_in_array(arr, i, j, tmp):
-    tmp[...] = arr[i][...]
-    arr[i][...] = arr[j][...]
-    arr[j][...] = tmp[...]
+    """Swap i and j elements in arr using tmp"""
+    tmp[:] = arr[i][:]
+    arr[i][:] = arr[j][:]
+    arr[j][:] = tmp[:]
 
 
 @numba.jit(nopython=True)
