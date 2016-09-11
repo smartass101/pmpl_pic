@@ -1,7 +1,7 @@
 import numba
 
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True)
 def find_particle_in_grid(particle_pos, h, S_h):
     """Find position (index and offset from lower left node) of particle in grid"""
     j, x = divmod(particle_pos[0], h)
@@ -9,7 +9,7 @@ def find_particle_in_grid(particle_pos, h, S_h):
     return j, k, x, y
 
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True)
 def cic_charge_weighting(particle_pos, particle_charge, active_particles, rho, h):
     """Cloud-in-cell charge weighting of particles to rho grid"""
     S_h = h**2                             # cell surface
@@ -22,7 +22,7 @@ def cic_charge_weighting(particle_pos, particle_charge, active_particles, rho, h
         rho[j,k+1] += partcle_charge * (h-x)*y/S_h
 
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True)
 def cic_field_weighting(particle_pos, particle_field, active_particles, field, h):
     """Cloud-in-cell field weighting of field grid to particles"""
     S_h = h**2                             # cell surface

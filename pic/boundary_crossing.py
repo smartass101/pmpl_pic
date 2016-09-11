@@ -2,7 +2,7 @@ import numpy as np
 import numba
 
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True)
 def boundary_crossings(particle_pos, particle_vel, particle_charge, x_min,
                        x_max, probe_min, probe_max,
                        active_particles):
@@ -28,14 +28,14 @@ def boundary_crossings(particle_pos, particle_vel, particle_charge, x_min,
     return active_particles, lost_charge
 
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True)
 def swap_in_array(arr, i, j, tmp):
     tmp[...] = arr[i][...]
     arr[i][...] = arr[j][...]
     arr[j][...] = tmp[...]
 
 
-@numba.jit(nopython=True, cache=True)
+@numba.jit(nopython=True)
 def boundary_reflections(particle_pos, particle_vel, x_min, x_max):
     """Detect, select and count particles reflected off boundaries
 
