@@ -5,7 +5,8 @@
 
 ** TODO [#A] include homogeneous B field
 
-** TODO [#A] calculate and add probe potential
+** DONE [#A] calculate and add probe potential
+CLOSED: [2016-09-11 Sun 20:15]
 
 ** DONE add callback function
 CLOSED: [2016-09-11 Sun 11:45]
