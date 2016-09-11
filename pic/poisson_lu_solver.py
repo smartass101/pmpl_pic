@@ -26,7 +26,7 @@ def create_poisson_solver(n):
 
     """
     minus_laplace_matrix = create_minus_laplace_matrix(n)
-    solve_lu = splalg.factorized(minus_laplace_matrix)
+    solve_lu = splalg.factorized(minus_laplace_matrix.tocsc())
     def solver(rho_normed):
         """Solve Poisson equation for phi with normed rho
 
