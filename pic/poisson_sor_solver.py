@@ -80,6 +80,6 @@ def solve_poisson(rho_normed, phi, convergence_ratio, max_iterations,
         reverse = not reverse # alternate iteration direction to mitigate direction bias
         iterations += 1
         # termination condition
-        if mean_abs_change / mean_abs_phi < convergence_ratio or iterations >= max_iterations:
+        if np.divide(mean_abs_change, mean_abs_phi) < convergence_ratio or iterations >= max_iterations:
             break
     return iterations
