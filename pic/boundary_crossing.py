@@ -46,23 +46,26 @@ def boundary_reflections(particle_pos, particle_vel, x_min, x_max):
     reflected_particles : int
         Number of reflected particles. They are put at the beginning of the
         particle_* arrays, i.e. particle_pos[:reflected_particles].
+
+    Note
+    ----
+    The reflected particles can be used as a reservoir of particles, but they
+    are actually the mirror image of the particles entering the region.
+    However, this is of no importance due to the symmetry of the problem.
     """
-    reflected_particles = 0
-    # TODO need to return reflected particles, maybe by shifting them to front
-    # TODO returning the reflectd ones would gibe the mirror image of particles entering the region
-    # for swapping
+    reflected_particles = 0     # count reflected particles
     tmp_pos = np.empty(particle_pos.shape[1:], dtype=particle_pos.dtype)
     tmp_vel = np.empty(particle_vel.shape[1:], dtype=particle_vel.dtype)
+    dx_reg = x_max - x_min                     # region length
     for i in range(particle_pos.shape[0]): # for all moving particles
         reflected = False                  # assume not reflected
         for j in range(particle_pos.shape[1]): # check each position
-            below = particle_pos[i][j] < x_min
-            above = x_max < particle_pos[i][j]
-            if above or below:
-                reflected = True
+            # check if out of bounds
+            if particle_pos[i][j] < x_min or x_max < particle_pos[i][j]:
+                # new position is inverted remainder of region length
+                particle_pos[i][j] = dx_reg - (particle_pos[i][j] % dx_reg)
+                reflected = True # the particle is reflected, swap later
                 particle_vel[i][j] *= -1 # bounce off component reversed
-                boundary = x_min if below else x_max
-                particle_pos[i][j] = 2*boundary - particle_pos[i][j]
         if reflected:
             # swap with first particle after last reflected particle
             swap_in_array(particle_pos, i, reflected_particles, tmp_pos)
