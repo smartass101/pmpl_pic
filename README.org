@@ -1,0 +1,32 @@
+
+* PIC simulation of V-A characteristic of a probe
+
+* Future work
+
+** TODO make nicer particle container classes
+- some slicing support to factor out that ugly thing
+
+** TODO include homogeneous B field
+
+** TODO calculate and add probe potential
+
+** DONE add callback function
+CLOSED: [2016-09-11 Sun 11:45]
+- statistics
+- plotting
+
+** TODO calculate current density divided by probe surface
+
+*** TODO probe object container
+
+** TODO calculate probe current statistics for termination condition
+
+*** TODO return std of current
+** TODO merge CIC weighting with other functions
+** TODO physical scales as input
+- n_e -> N
+- macroparticles as fraction of requirement for n_e
+** TODO nice CLI interface for plotting and fitting V-A characteristic
+** TODO document in this README
+- requirements.txt
+  - numba 0.28.1
