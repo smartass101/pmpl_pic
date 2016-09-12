@@ -104,7 +104,7 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, cal
             j_probe_mean = update_mean_estimate(j_probe, j_probe_mean, samples_count)
             j_probe_mean_sq = update_mean_estimate(j_probe**2, j_probe_mean_sq, samples_count)
             j_probe_std = std_from_means(j_probe_mean, j_probe_mean_sq)
-            if np.abs(np.divide(j_probe_std, j_probe_mean)) < 0.05 and samples_count > 10:
+            if samples_count > 10 and np.abs(np.divide(j_probe_std, j_probe_mean)) < 0.05:
                 break
     return j_probe_mean, j_probe_std
 
