@@ -1,11 +1,11 @@
 """Poisson equation solver using the successive over-relaxation (SOR) method
 
 Based on http://www.physics.buffalo.edu/phy410-505/2011/topic3/app1/index.html
-Numerically stable mean: http://diego.assencio.com/?index=c34d06f4f4de2375658ed41f70177d59
 
 """
 import numpy as np
 import numba
+from pic.running_statistics import update_mean_estimate
 
 
 def optimum_sor_omega(points_1d):
@@ -73,8 +73,9 @@ def solve_poisson(rho_normed, phi, convergence_ratio, max_iterations,
                 phi_new *= 0.25 # 2D diff results in division by 4
                 # recursive mean calculation for better numerical stability
                 divisor = i*N + j + 1 # number of elements calculated including this one
-                mean_abs_phi += (abs(phi_new) - mean_abs_phi) / divisor
-                mean_abs_change += (abs(phi_new - phi[i,j]) - mean_abs_change) / divisor
+                mean_abs_phi = update_mean_estimate(abs(phi_new), mean_abs_phi, divisor)
+                mean_abs_change += update_mean_estimate(abs(phi_new - phi[i,j]),
+                                                        mean_abs_change, divisor)
                 # set new SOR estimate
                 phi[i,j] = (1 - relaxation_factor)*phi[i,j] + relaxation_factor*phi_new
         reverse = not reverse # alternate iteration direction to mitigate direction bias

@@ -9,6 +9,7 @@ from pic.weighting import cic_charge_weighting, cic_field_weighting
 from pic.poisson_lu_solver import create_poisson_solver
 from pic.poisson_sor_solver import solve_poisson, optimum_sor_omega
 from pic.movers import kinematic_mover, electrostatic_mover
+from pic.running_statistics import update_mean_estimate, std_from_means
 
 # TODO use (dim, N) arrays for C-column order because we vectorize over rows?
 
@@ -29,7 +30,7 @@ Particles = namedtuple('Particles', ('x', 'v', 'n', 'q', 'm'))
 
 
 # TODO loop over V_fl with alocated arrays, just change initial values?
-def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, callback):
+def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, callback=None):
     # TODO physical basis for parameters
     grid_shape = probe_setup.grid_shape # 2D rectangular grid
     h = probe_setup.h
@@ -49,6 +50,8 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, cal
     iterations = 0
     rho = np.empty(grid_shape)
     particle_E = np.empty((frac_N, 2))
+    j_probe_mean = 0.0
+    j_probe_mean_sq = 0.0
     while iterations < max_iterations:
         # detect boundary interactions
         lost_charge = 0.0
@@ -76,7 +79,8 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, cal
         for particles in regions.main:
             cic_charge_weighting(particles.x, particles.q, particles.n[0], rho, h)
         # solve Poisson equation
-        phi = poisson_solver(rho*h**2/spc.epsilon_0*1e3)
+        macro_particle = 1e4
+        phi = poisson_solver(rho*h**2/spc.epsilon_0*macro_particle)
         # add probe potential
         phi += phi_probe
         # calculate E from phi
@@ -91,8 +95,18 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, cal
                                 particles.m, particle_E, particles.n[0], dt)
         # next iteration
         iterations += 1
-        callback(regions, rho, phi, iterations, j_probe)
-    return j_probe
+        if callback is not None:
+            callback(regions, rho, phi, iterations, j_probe)
+        # check current estimate stability
+        skip_initial_samples = 10
+        if iterations > skip_initial_samples:
+            samples_count = iterations - skip_initial_samples
+            j_probe_mean = update_mean_estimate(j_probe, j_probe_mean, samples_count)
+            j_probe_mean_sq = update_mean_estimate(j_probe**2, j_probe_mean_sq, samples_count)
+            j_probe_std = std_from_means(j_probe_mean, j_probe_mean_sq)
+            if np.abs(np.divide(j_probe_std, j_probe_mean)) < 0.05 and samples_count > 10:
+                break
+    return j_probe_mean, j_probe_std
 
 
 if __name__ == '__main__':
@@ -103,6 +117,21 @@ if __name__ == '__main__':
         plt.imshow(phi)
         plt.pause(1.0/30)
         print('iteration', it, 'with current', i)
-    probe = ProbeSetup(100, 9, 1e-5)
-    i_probe = simulate_probe_current(probe, 1e-12, 10000, 50, 1e-10, 100, callback)
-    print(i_probe)
+    def callback_stats(reg, rho, phi, it, i):
+        for part in reg.main:
+            n = part.n[0]
+            bins = int(n**0.5)
+            plt.cla()
+            plt.hist(np.linalg.norm(part.v[:n], axis=1), bins=bins, alpha=0.5)
+            print('energy', 0.5*part.m*np.mean(np.sum(part.v[:n]**2, axis=1))/spc.eV)
+        plt.pause(1.0/30)
+    probe = ProbeSetup(100, 9, 1e-6)
+    U_pr = np.linspace(-100, 100, 11)/10
+    j_probe = np.empty_like(U_pr)
+    j_probe_std = np.empty_like(U_pr)
+    plt.gca()
+    for i in range(U_pr.shape[0]):
+        print('Simulation', i+1, 'of', U_pr.shape[0], 'with', U_pr[i], 'V')
+        j_probe[i], j_probe_std[i] = simulate_probe_current(probe, U_pr[i], 10000, 50, 1e-11, 1000, callback_stats)
+    plt.errorbar(U_pr, j_probe, j_probe_std, fmt='ko')
+    print(j_probe)

@@ -4,6 +4,7 @@
 * Future work
 
 ** TODO [#A] include homogeneous B field
+** TODO [#A] collisions
 
 ** DONE [#A] calculate and add probe potential
 CLOSED: [2016-09-11 Sun 20:15]
@@ -13,17 +14,20 @@ CLOSED: [2016-09-11 Sun 11:45]
 - statistics
 - plotting
 
-** TODO calculate current density divided by probe surface
+** DONE calculate current density divided by probe surface
+CLOSED: [2016-09-12 Mon 09:36]
 
-*** TODO probe object container
+*** DONE probe object container
+CLOSED: [2016-09-12 Mon 09:36]
 
-** TODO calculate probe current statistics for termination condition
+** DONE calculate probe current statistics for termination condition
+CLOSED: [2016-09-12 Mon 09:36]
 
 *** TODO return std of current
 ** TODO document in this README
 - requirements.txt
   - numba 0.28.1
-** TODO [#B] nice CLI interface for plotting and fitting V-A characteristic
+** TODO [#C] nice CLI interface for plotting and fitting V-A characteristic
 ** TODO [#C] make nicer particle container classes
 - some slicing support to factor out that ugly thing
 
