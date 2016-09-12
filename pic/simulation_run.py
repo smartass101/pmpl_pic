@@ -3,7 +3,7 @@ from scipy.stats import norm, uniform
 import scipy.constants as spc
 import numpy as np
 from collections import namedtuple
-from pic.electrostatic_probe import ProbeSetup
+from pic.electrostatic_probe import ProbeSetup, v_a_characteristic
 from pic.boundary_crossing import boundary_crossings, boundary_reflections
 from pic.weighting import cic_charge_weighting, cic_field_weighting
 from pic.poisson_lu_solver import create_poisson_solver
@@ -108,30 +108,52 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, cal
                 break
     return j_probe_mean, j_probe_std
 
+def callback_anim_rho(reg, rho, phi, it, i):
+    plt.cla()
+    plt.imshow(rho, cmap=plt.cm.plasma)
+    plt.pause(1.0/30)
+    print('iteration', it, 'with current', i)
+
+
+def callback_stats(reg, rho, phi, it, i):
+    plt.cla()
+    for part in reg.main:
+        n = part.n[0]
+        bins = int(n**0.5)
+        plt.hist(np.linalg.norm(part.v[:n], axis=1)**2*part.m, bins=bins, alpha=0.5)
+        print('energy', 0.5*part.m*np.mean(np.sum(part.v[:n]**2, axis=1))/spc.eV)
+    plt.pause(1.0/30)
+
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     plt.ion()
-    def callback(reg, rho, phi, it, i):
-        plt.cla()
-        plt.imshow(phi)
-        plt.pause(1.0/30)
-        print('iteration', it, 'with current', i)
-    def callback_stats(reg, rho, phi, it, i):
-        for part in reg.main:
-            n = part.n[0]
-            bins = int(n**0.5)
-            plt.cla()
-            plt.hist(np.linalg.norm(part.v[:n], axis=1), bins=bins, alpha=0.5)
-            print('energy', 0.5*part.m*np.mean(np.sum(part.v[:n]**2, axis=1))/spc.eV)
-        plt.pause(1.0/30)
     probe = ProbeSetup(100, 9, 1e-6)
-    U_pr = np.linspace(-100, 100, 11)/10
+    T_e = 10
+    U_pr_max = 1e2
+    U_pr = np.linspace(-U_pr_max, U_pr_max)
     j_probe = np.empty_like(U_pr)
     j_probe_std = np.empty_like(U_pr)
     plt.gca()
     for i in range(U_pr.shape[0]):
         print('Simulation', i+1, 'of', U_pr.shape[0], 'with', U_pr[i], 'V')
-        j_probe[i], j_probe_std[i] = simulate_probe_current(probe, U_pr[i], 10000, 50, 1e-11, 1000, callback_stats)
-    plt.errorbar(U_pr, j_probe, j_probe_std, fmt='ko')
-    print(j_probe)
+        j_probe[i], j_probe_std[i] = simulate_probe_current(probe, U_pr[i], 10000, T_e, 1e-12, 1000)
+    # display results as plot
+    plt.errorbar(U_pr, j_probe, j_probe_std, fmt='ko', label='simulation')
+    plt.title('$T_e=%.0f$ eV' % T_e)
+    plt.ylabel('$j_{probe}$ [A/m^2]')
+    plt.xlabel('$U_{probe}$ [V]')
+    # try fitting analytic curve
+    from scipy.optimize import curve_fit
+    V_fl = U_pr[np.abs(j_probe).argmin()]
+    fit_sl = slice(None, U_pr.shape[0]//2)
+    try:
+        p0 = [j_probe.max(), V_fl, T_e]
+        p, err = curve_fit(v_a_characteristic, U_pr[fit_sl], j_probe[fit_sl], p0=p0,
+                           sigma=j_probe_std[fit_sl], absolute_sigma=True)
+    except RuntimeError:
+        p = None
+    if p is not None:
+        plt.plot(U_pr, v_a_characteristic(U_pr, *p), 'r-',
+                 label=('$%.0f\\left(1-\\exp\\left(\\frac{U_{probe}  %+.1f}{%.1f} \\right)\\right)$' % tuple(p)))
+    plt.legend(loc='lower left')

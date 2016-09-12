@@ -29,6 +29,11 @@ class ProbeSetup(object):
         return self.phi_1 * U_probe
 
 
+def v_a_characteristic(U_pr, i_sat, V_fl, T_e):
+    """V-A characteristic of Langmuir probe, T_e is in eV"""
+    return i_sat * (1 - np.exp((U_pr - V_fl)/T_e))
+
+
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     probe = ProbeSetup(100, 9, 1e-10)
