@@ -143,6 +143,8 @@ if __name__ == '__main__':
     plt.title('$T_e=%.0f$ eV' % T_e)
     plt.ylabel('$j_{probe}$ [A/m^2]')
     plt.xlabel('$U_{probe}$ [V]')
+    ylims = plt.ylim()
+    plt.grid()
     # try fitting analytic curve
     from scipy.optimize import curve_fit
     V_fl = U_pr[np.abs(j_probe).argmin()]
@@ -156,4 +158,5 @@ if __name__ == '__main__':
     if p is not None:
         plt.plot(U_pr, v_a_characteristic(U_pr, *p), 'r-',
                  label=('$%.0f\\left(1-\\exp\\left(\\frac{U_{probe}  %+.1f}{%.1f} \\right)\\right)$' % tuple(p)))
+        plt.ylim(*ylims)        # restore lims to sim data
     plt.legend(loc='lower left')
