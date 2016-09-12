@@ -21,7 +21,7 @@ class ProbeSetup(object):
         i_max = int(np.floor(self.max / h))
         # solve the phi potential
         rho = np.zeros(self.grid_shape)
-        for i in range(1000):
+        for i in range(100):
             self.phi_1[i_min:i_max+1,i_min:i_max+1] = 1.0 # set U_probe
             solve_poisson(rho, self.phi_1, np.nan, 0, 1)  # one iteration
 
