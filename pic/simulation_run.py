@@ -8,7 +8,7 @@ from pic.boundary_crossing import boundary_crossings, boundary_reflections
 from pic.weighting import cic_charge_weighting, cic_field_weighting
 from pic.poisson_lu_solver import create_poisson_solver
 from pic.poisson_sor_solver import solve_poisson, optimum_sor_omega
-from pic.movers import kinematic_mover, electrostatic_mover
+from pic.movers import kinematic_mover, electrostatic_mover, electrostatic_homog_B_mover
 from pic.collisions import collide_with_neutrals
 from pic.running_statistics import update_mean_estimate, std_from_means
 
@@ -22,7 +22,7 @@ Particles = namedtuple('Particles', ('x', 'v', 'n', 'q', 'm'))
 
 
 # TODO loop over V_fl with alocated arrays, just change initial values?
-def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, callback=None):
+def simulate_probe_current(probe_setup, U_probe, N, T_e, B, dt, max_iterations, callback=None):
     # TODO physical basis for parameters
     grid_shape = probe_setup.grid_shape # 2D rectangular grid
     h = probe_setup.h
@@ -84,13 +84,19 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, cal
         for particles in regions.main:
             # CIC field weighting
             cic_field_weighting(particles.x, particle_E, particles.n[0], E, h)
-            electrostatic_mover(particles.x, particles.v, particles.q,
-                                particles.m, particle_E, particles.n[0], dt)
+            if B == 0:
+                electrostatic_mover(particles.x, particles.v, particles.q,
+                                    particles.m, particle_E, particles.n[0],
+                                    dt)
+            else:
+                electrostatic_homog_B_mover(particles.x, particles.v,
+                                            particles.q, particles.m, B,
+                                            particle_E, particles.n[0], dt)
         # collisions with neutrals
         collided_fraction_e = 0.01 # estimate for electrons
         for particles in regions.main:
-            # collision time will be proportional to v, ratios of v^2 are
-            # inverse to ratios of m
+            # collision time will be inversely proportional to v, ratios of v^2
+            # are inverse to ratios of m at the same T
             collided_fraction = collided_fraction_e * np.sqrt(spc.m_e/particles.m)
             collide_with_neutrals(collided_fraction, T_e, spc.m_p, particles.m,
                                   particles.v, particles.n[0])
@@ -130,7 +136,8 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     plt.ion()
     probe = ProbeSetup(100, 9, 1e-6)
-    T_e = 10
+    T_e = 10                    # eV
+    B = 0.25                       # T
     U_pr_max = 1e2
     U_pr = np.linspace(-U_pr_max, U_pr_max)
     j_probe = np.empty_like(U_pr)
@@ -138,10 +145,10 @@ if __name__ == '__main__':
     plt.gca()
     for i in range(U_pr.shape[0]):
         print('Simulation', i+1, 'of', U_pr.shape[0], 'with', U_pr[i], 'V')
-        j_probe[i], j_probe_std[i] = simulate_probe_current(probe, U_pr[i], 10000, T_e, 1e-12, 1000)
+        j_probe[i], j_probe_std[i] = simulate_probe_current(probe, U_pr[i], 10000, T_e, B, 1e-12, 1000)
     # display results as plot
     plt.errorbar(U_pr, j_probe, j_probe_std, fmt='ko', label='simulation')
-    plt.title('$T_e=%.0f$ eV' % T_e)
+    plt.title('$T_e=%.0f$ eV, $B_z=%.0f$ T' % (T_e, B))
     plt.ylabel('$j_{probe}$ [A/m^2]')
     plt.xlabel('$U_{probe}$ [V]')
     ylims = plt.ylim()
