@@ -11,7 +11,7 @@ def collide_with_neutrals(collided_fraction, T_e, m_neutral, particles_m, partic
     if particles_m != m_neutral:                       # for electron-neutral
         cos_Xi = np.sqrt(1 - 2*particles_m/m_neutral * (1 - cos_Xi))
     cos_phi = np.cos(np.random.random(collided_count)*2*np.pi)
-    mangle_v_r(relative_v, cos_Xi, cos_phi)
+    mangle_v_r(relative_v.copy(), cos_Xi, cos_phi)
     particles_v[collided_indices] = relative_v + neutrals_v
 
 
