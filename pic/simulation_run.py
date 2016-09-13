@@ -1,24 +1,16 @@
 from __future__ import print_function
-from scipy.stats import norm, uniform
 import scipy.constants as spc
 import numpy as np
 from collections import namedtuple
 from pic.electrostatic_probe import ProbeSetup, v_a_characteristic
+from pic import initialization as init
 from pic.boundary_crossing import boundary_crossings, boundary_reflections
 from pic.weighting import cic_charge_weighting, cic_field_weighting
 from pic.poisson_lu_solver import create_poisson_solver
 from pic.poisson_sor_solver import solve_poisson, optimum_sor_omega
 from pic.movers import kinematic_mover, electrostatic_mover
+from pic.collisions import collide_with_neutrals
 from pic.running_statistics import update_mean_estimate, std_from_means
-
-# TODO use (dim, N) arrays for C-column order because we vectorize over rows?
-
-def initialize_particle_kinematics(region_length, T_e, m, N):
-    # TODO will need separate mass for electrons and ions
-    pos = uniform.rvs(loc=0, scale=region_length, size=(N, 2)) # 2D position
-    vel_var = T_e * spc.eV / m # variance of normal dist
-    vel = norm.rvs(scale=vel_var**0.5, size=(N, 3))
-    return pos, vel
 
 
 def assert_is_not_nan(arr):
@@ -39,8 +31,9 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, cal
     region_length = grid_shape[0] * h
     # initialize particle kinematics for each species and main/reservoir regions
     regions = Regions._make(
-        [Particles._make(initialize_particle_kinematics(region_length, T_e, m, frac_N)
-                         +([active_particles], charge, m))
+        [Particles(init.uniform_positions(region_length, frac_N),
+                   init.maxwell_velocities(T_e, m, frac_N),
+                   [active_particles], charge, m)
          for (charge, m) in ((spc.e, spc.m_p), (-spc.e, spc.m_e))]
                  for region in Regions._fields)
     # probe potential
@@ -93,6 +86,14 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, dt, max_iterations, cal
             cic_field_weighting(particles.x, particle_E, particles.n[0], E, h)
             electrostatic_mover(particles.x, particles.v, particles.q,
                                 particles.m, particle_E, particles.n[0], dt)
+        # collisions with neutrals
+        collided_fraction_e = 0.01 # estimate for electrons
+        for particles in regions.main:
+            # collision time will be proportional to v, ratios of v^2 are
+            # inverse to ratios of m
+            collided_fraction = collided_fraction_e * np.sqrt(spc.m_e/particles.m)
+            collide_with_neutrals(collided_fraction, T_e, spc.m_p, particles.m,
+                                  particles.v, particles.n[0])
         # next iteration
         iterations += 1
         if callback is not None:

@@ -4,7 +4,8 @@
 * Future work
 
 ** TODO [#A] include homogeneous B field
-** TODO [#A] collisions
+** DONE [#A] collisions
+CLOSED: [2016-09-13 Tue 07:21]
 
 ** DONE [#A] calculate and add probe potential
 CLOSED: [2016-09-11 Sun 20:15]
@@ -23,7 +24,8 @@ CLOSED: [2016-09-12 Mon 09:36]
 ** DONE calculate probe current statistics for termination condition
 CLOSED: [2016-09-12 Mon 09:36]
 
-*** TODO return std of current
+*** DONE return std of current
+CLOSED: [2016-09-12 Mon 18:39]
 ** TODO document in this README
 - requirements.txt
   - numba 0.28.1
