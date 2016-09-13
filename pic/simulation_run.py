@@ -26,13 +26,12 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, B, dt, max_iterations, 
     # TODO physical basis for parameters
     grid_shape = probe_setup.grid_shape # 2D rectangular grid
     h = probe_setup.h
-    frac_N = N // 2             # each species is fraction of N all particle
-    active_particles = int(frac_N*0.75) # leave some space for extra particles
+    active_particles = int(N*0.8) # leave some space for extra particles
     region_length = grid_shape[0] * h
     # initialize particle kinematics for each species and main/reservoir regions
     regions = Regions._make(
-        [Particles(init.uniform_positions(region_length, frac_N),
-                   init.maxwell_velocities(T_e, m, frac_N),
+        [Particles(init.uniform_positions(region_length, N),
+                   init.maxwell_velocities(T_e, m, N),
                    [active_particles], charge, m)
          for (charge, m) in ((spc.e, spc.m_p), (-spc.e, spc.m_e))]
                  for region in Regions._fields)
@@ -42,7 +41,7 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, B, dt, max_iterations, 
     # initial iteration values
     iterations = 0
     rho = np.empty(grid_shape)
-    particle_E = np.empty((frac_N, 2))
+    particle_E = np.empty((N, 2))
     j_probe_mean = 0.0
     j_probe_mean_sq = 0.0
     while iterations < max_iterations:
@@ -58,7 +57,7 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, B, dt, max_iterations, 
             main_particles = regions.main[s_i]
             reflected_particles = boundary_reflections(particles.x, particles.v, 0, region_length)
             # assign reflected as new, make sure enough space is there
-            free_particles = frac_N - main_particles.n[0]
+            free_particles = N - main_particles.n[0]
             transferable = min(free_particles, reflected_particles)
             main_sl = slice(main_particles.n[0], main_particles.n[0]+transferable)
             reservoir_sl = slice(None, transferable) # [:transferable]
@@ -80,7 +79,7 @@ def simulate_probe_current(probe_setup, U_probe, N, T_e, B, dt, max_iterations, 
         E = -np.dstack(np.gradient(phi, h, h)) # TODO *-1 in some for loop
         # move particles
         for particles in regions.reservoir:
-            kinematic_mover(particles.x, particles.v, frac_N, dt)
+            kinematic_mover(particles.x, particles.v, N, dt)
         for particles in regions.main:
             # CIC field weighting
             cic_field_weighting(particles.x, particle_E, particles.n[0], E, h)
@@ -145,7 +144,7 @@ if __name__ == '__main__':
     plt.gca()
     for i in range(U_pr.shape[0]):
         print('Simulation', i+1, 'of', U_pr.shape[0], 'with', U_pr[i], 'V')
-        j_probe[i], j_probe_std[i] = simulate_probe_current(probe, U_pr[i], 10000, T_e, B, 1e-12, 1000)
+        j_probe[i], j_probe_std[i] = simulate_probe_current(probe, U_pr[i], 10000, T_e, B, 1e-12, 1000, callback_anim_rho)
     # display results as plot
     plt.errorbar(U_pr, j_probe, j_probe_std, fmt='ko', label='simulation')
     plt.title('$T_e=%.0f$ eV, $B_z=%.0f$ T' % (T_e, B))
