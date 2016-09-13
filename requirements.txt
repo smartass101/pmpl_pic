@@ -1,0 +1,5 @@
+numpy
+scipy
+matplotlib>=1.5
+numba>=0.28.1
+progressbar2

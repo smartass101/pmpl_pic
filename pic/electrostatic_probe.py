@@ -1,5 +1,6 @@
 import numpy as np
 from pic.poisson_sor_solver import solve_poisson
+import matplotlib.pyplot as plt
 
 
 class ProbeSetup(object):
@@ -34,8 +35,31 @@ def v_a_characteristic(U_pr, i_sat, V_fl, T_e):
     return i_sat * (1 - np.exp((U_pr - V_fl)/T_e))
 
 
+def plot_fit_v_a_characteristic(U_pr, j_probe, j_probe_std, T_e, B):
+    plt.errorbar(U_pr, j_probe, j_probe_std, fmt='ko', label='simulation')
+    plt.title('$T_e=%.2g$ eV, $B_z=%.2g$ T' % (T_e, B))
+    plt.ylabel('$j_{probe}$ [A/m^2]')
+    plt.xlabel('$U_{probe}$ [V]')
+    ylims = plt.ylim()
+    plt.grid()
+    # try fitting analytic curve
+    from scipy.optimize import curve_fit
+    V_fl = U_pr[np.abs(j_probe).argmin()]
+    fit_sl = slice(None, U_pr.shape[0] // 2)
+    try:
+        p0 = [j_probe.max(), V_fl, T_e]
+        p, err = curve_fit(v_a_characteristic, U_pr[fit_sl], j_probe[fit_sl], p0=p0,
+                           sigma=j_probe_std[fit_sl], absolute_sigma=True)
+    except RuntimeError:
+        p = None
+    if p is not None:
+        plt.plot(U_pr, v_a_characteristic(U_pr, *p), 'r-',
+                 label=('$%.3g\\left(1-\\exp\\left(\\frac{U_{probe}  %+.3g}{%.3g} \\right)\\right)$' % tuple(p)))
+        plt.ylim(*ylims)        # restore lims to sim data
+    plt.legend(loc='lower left')
+
+
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
     probe = ProbeSetup(100, 9, 1e-10)
     phi = probe.get_potential(1)
     plt.matshow(phi)

@@ -1,40 +1,25 @@
 
 * PIC simulation of V-A characteristic of a probe
 
-* Future work
+This program was created for the final assignment for the PMPL (computer
+modeling of plasma) course. It is a 2D3V PIC code with an optional Boris
+integrator scheme for a perpendicular, homogeneous magnetic field. 
 
-** TODO [#A] include homogeneous B field
-** DONE [#A] collisions
-CLOSED: [2016-09-13 Tue 07:21]
+The code simulated a square probe in the center of a square grid and measures
+the incident current on the probe for a given applied voltage. This V-A
+characteristic is the fitted with an analytic curve a for Langmuir probes.
 
-** DONE [#A] calculate and add probe potential
-CLOSED: [2016-09-11 Sun 20:15]
-** TODO separate dt and cycles for different species
-** TODO use 1e4 particles for each species
-** DONE add callback function
-CLOSED: [2016-09-11 Sun 11:45]
-- statistics
-- plotting
+It is likely buggy and unreliable. Nevertheless, it gives a reasonable curve
+shape for the V-A characteristic of a probe.
 
-** DONE calculate current density divided by probe surface
-CLOSED: [2016-09-12 Mon 09:36]
+** Running the simulation
+1) check that dependencies in [[requirements.txt]] are satisfied (using e.g. ~pip install -r .~)
+2) run the script ~./run_simulation.py~ with default parameters or tune the
+   parameters described by the ~--help~ option
+3) the script will show a graph of the fitted V-A characteristic of a probe in the center
 
-*** DONE probe object container
-CLOSED: [2016-09-12 Mon 09:36]
+** Implementation details
+The code is written using NumPy ndarray containers for data access and storage.
+for-cycle heavy pieces of code are optimized using the Numba JIT compiler.
 
-** DONE calculate probe current statistics for termination condition
-CLOSED: [2016-09-12 Mon 09:36]
-
-*** DONE return std of current
-CLOSED: [2016-09-12 Mon 18:39]
-** TODO document in this README
-- requirements.txt
-  - numba 0.28.1
-** TODO [#C] nice CLI interface for plotting and fitting V-A characteristic
-** TODO [#C] make nicer particle container classes
-- some slicing support to factor out that ugly thing
-
-** TODO [#C] merge CIC weighting with other functions
-** TODO [#C] physical scales as input
-- n_e -> N
-- macroparticles as fraction of requirement for n_e
+It uses CIC weighting and LU factorization for solving the Poisson equation.
