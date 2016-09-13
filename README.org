@@ -9,7 +9,8 @@ CLOSED: [2016-09-13 Tue 07:21]
 
 ** DONE [#A] calculate and add probe potential
 CLOSED: [2016-09-11 Sun 20:15]
-
+** TODO separate dt and cycles for different species
+** TODO use 1e4 particles for each species
 ** DONE add callback function
 CLOSED: [2016-09-11 Sun 11:45]
 - statistics
